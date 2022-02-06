@@ -1,5 +1,5 @@
 /*************************************************************************/
-/*  canvas_layer.h                                                       */
+/*  scene_cache_interface.h                                              */
 /*************************************************************************/
 /*                       This file is part of:                           */
 /*                           GODOT ENGINE                                */
@@ -28,83 +28,55 @@
 /* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                */
 /*************************************************************************/
 
-#ifndef CANVAS_LAYER_H
-#define CANVAS_LAYER_H
+#ifndef SCENE_CACHE_INTERFACE_H
+#define SCENE_CACHE_INTERFACE_H
 
-#include "scene/main/node.h"
+#include "core/multiplayer/multiplayer_api.h"
 
-class Viewport;
-class CanvasLayer : public Node {
-	GDCLASS(CanvasLayer, Node);
+class SceneCacheInterface : public MultiplayerCacheInterface {
+	GDCLASS(SceneCacheInterface, MultiplayerCacheInterface);
 
-	bool locrotscale_dirty = false;
-	Vector2 ofs;
-	Size2 scale = Vector2(1, 1);
-	real_t rot = 0.0;
-	int layer = 1;
-	Transform2D transform;
-	RID canvas;
+private:
+	MultiplayerAPI *multiplayer;
 
-	ObjectID custom_viewport_id; // to check validity
-	Viewport *custom_viewport = nullptr;
+	//path sent caches
+	struct PathSentCache {
+		Map<int, bool> confirmed_peers;
+		int id;
+	};
 
-	RID viewport;
-	Viewport *vp = nullptr;
+	//path get caches
+	struct PathGetCache {
+		struct NodeInfo {
+			NodePath path;
+			ObjectID instance;
+		};
 
-	int sort_index = 0;
-	bool visible = true;
+		Map<int, NodeInfo> nodes;
+	};
 
-	bool follow_viewport = false;
-	float follow_viewport_scale = 1.0;
-
-	void _update_xform();
-	void _update_locrotscale();
-	void _update_follow_viewport(bool p_force_exit = false);
+	HashMap<NodePath, PathSentCache> path_send_cache;
+	Map<int, PathGetCache> path_get_cache;
+	int last_send_cache_id = 1;
 
 protected:
-	void _notification(int p_what);
-	static void _bind_methods();
-	void _validate_property(PropertyInfo &property) const override;
+	bool _send_confirm_path(Node *p_node, NodePath p_path, PathSentCache *psc, int p_target);
+	static MultiplayerCacheInterface *_create(MultiplayerAPI *p_multiplayer);
 
 public:
-	void set_layer(int p_xform);
-	int get_layer() const;
+	static void make_default();
 
-	void set_visible(bool p_visible);
-	bool is_visible() const;
+	virtual void clear() override;
+	virtual void on_peer_change(int p_id, bool p_connected) override;
+	virtual void process_simplify_path(int p_from, const uint8_t *p_packet, int p_packet_len) override;
+	virtual void process_confirm_path(int p_from, const uint8_t *p_packet, int p_packet_len) override;
 
-	void set_transform(const Transform2D &p_xform);
-	Transform2D get_transform() const;
+	// Returns true if all peers have cached path.
+	virtual bool send_object_cache(Object *p_obj, NodePath p_path, int p_target, int &p_id) override;
+	virtual Object *get_cached_object(int p_from, uint32_t p_cache_id) override;
+	virtual bool is_cache_confirmed(NodePath p_path, int p_peer) override;
 
-	void set_offset(const Vector2 &p_offset);
-	Vector2 get_offset() const;
-
-	void set_rotation(real_t p_radians);
-	real_t get_rotation() const;
-
-	void set_scale(const Size2 &p_scale);
-	Size2 get_scale() const;
-
-	Size2 get_viewport_size() const;
-
-	RID get_viewport() const;
-
-	void set_custom_viewport(Node *p_viewport);
-	Node *get_custom_viewport() const;
-
-	void reset_sort_index();
-	int get_sort_index();
-
-	void set_follow_viewport(bool p_enable);
-	bool is_following_viewport() const;
-
-	void set_follow_viewport_scale(float p_ratio);
-	float get_follow_viewport_scale() const;
-
-	RID get_canvas() const;
-
-	CanvasLayer();
-	~CanvasLayer();
+	SceneCacheInterface(MultiplayerAPI *p_multiplayer) { multiplayer = p_multiplayer; }
 };
 
-#endif // CANVAS_LAYER_H
+#endif // SCENE_CACHE_INTERFACE_H
