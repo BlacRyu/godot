@@ -41,6 +41,7 @@
 #include "core/os/os.h"
 #include "core/string/translation.h"
 #include "core/version.h"
+#include "editor/editor_file_dialog.h"
 #include "editor/editor_scale.h"
 #include "editor/editor_settings.h"
 #include "editor/editor_themes.h"
@@ -100,8 +101,8 @@ private:
 	LineEdit *install_path;
 	TextureRect *status_rect;
 	TextureRect *install_status_rect;
-	FileDialog *fdialog;
-	FileDialog *fdialog_install;
+	EditorFileDialog *fdialog;
+	EditorFileDialog *fdialog_install;
 	OptionButton *vcs_metadata_selection;
 	String zip_path;
 	String zip_title;
@@ -365,19 +366,19 @@ private:
 		fdialog->set_current_dir(project_path->get_text());
 
 		if (mode == MODE_IMPORT) {
-			fdialog->set_file_mode(FileDialog::FILE_MODE_OPEN_FILE);
+			fdialog->set_file_mode(EditorFileDialog::FILE_MODE_OPEN_FILE);
 			fdialog->clear_filters();
 			fdialog->add_filter(vformat("project.godot ; %s %s", VERSION_NAME, TTR("Project")));
 			fdialog->add_filter("*.zip ; " + TTR("ZIP File"));
 		} else {
-			fdialog->set_file_mode(FileDialog::FILE_MODE_OPEN_DIR);
+			fdialog->set_file_mode(EditorFileDialog::FILE_MODE_OPEN_DIR);
 		}
 		fdialog->popup_file_dialog();
 	}
 
 	void _browse_install_path() {
 		fdialog_install->set_current_dir(install_path->get_text());
-		fdialog_install->set_file_mode(FileDialog::FILE_MODE_OPEN_DIR);
+		fdialog_install->set_file_mode(EditorFileDialog::FILE_MODE_OPEN_DIR);
 		fdialog_install->popup_file_dialog();
 	}
 
@@ -925,12 +926,15 @@ public:
 		spacer->set_h_size_flags(Control::SIZE_EXPAND_FILL);
 		default_files_container->add_child(spacer);
 
-		fdialog = memnew(FileDialog);
-		fdialog->set_access(FileDialog::ACCESS_FILESYSTEM);
-		fdialog_install = memnew(FileDialog);
-		fdialog_install->set_access(FileDialog::ACCESS_FILESYSTEM);
+		fdialog = memnew(EditorFileDialog);
+		fdialog->set_previews_enabled(false); //Crucial, otherwise the engine crashes.
+		fdialog->set_access(EditorFileDialog::ACCESS_FILESYSTEM);
+		fdialog_install = memnew(EditorFileDialog);
+		fdialog_install->set_previews_enabled(false); //Crucial, otherwise the engine crashes.
+		fdialog_install->set_access(EditorFileDialog::ACCESS_FILESYSTEM);
 		add_child(fdialog);
 		add_child(fdialog_install);
+
 		project_name->connect("text_changed", callable_mp(this, &ProjectDialog::_text_changed));
 		project_path->connect("text_changed", callable_mp(this, &ProjectDialog::_path_text_changed));
 		install_path->connect("text_changed", callable_mp(this, &ProjectDialog::_path_text_changed));
@@ -1859,6 +1863,8 @@ void ProjectList::_bind_methods() {
 	ADD_SIGNAL(MethodInfo(SIGNAL_PROJECT_ASK_OPEN));
 }
 
+ProjectManager *ProjectManager::singleton = nullptr;
+
 void ProjectManager::_notification(int p_what) {
 	switch (p_what) {
 		case NOTIFICATION_TRANSLATION_CHANGED:
@@ -1901,6 +1907,21 @@ void ProjectManager::_notification(int p_what) {
 		case NOTIFICATION_WM_ABOUT: {
 			_show_about();
 		} break;
+	}
+}
+
+Ref<Texture2D> ProjectManager::_file_dialog_get_icon(const String &p_path) {
+	return singleton->icon_type_cache["ObjectHR"];
+}
+
+void ProjectManager::_build_icon_type_cache(Ref<Theme> p_theme) {
+	List<StringName> tl;
+	p_theme->get_icon_list(SNAME("EditorIcons"), &tl);
+	for (List<StringName>::Element *E = tl.front(); E; E = E->next()) {
+		if (!ClassDB::class_exists(E->get())) {
+			continue;
+		}
+		icon_type_cache[E->get()] = p_theme->get_icon(E->get(), SNAME("EditorIcons"));
 	}
 }
 
@@ -2460,6 +2481,8 @@ void ProjectManager::_version_button_pressed() {
 }
 
 ProjectManager::ProjectManager() {
+	singleton = this;
+
 	// load settings
 	if (!EditorSettings::get_singleton()) {
 		EditorSettings::create();
@@ -2502,20 +2525,13 @@ ProjectManager::ProjectManager() {
 				editor_set_scale(EditorSettings::get_singleton()->get("interface/editor/custom_display_scale"));
 				break;
 		}
-
-		// Define a minimum window size to prevent UI elements from overlapping or being cut off
-		DisplayServer::get_singleton()->window_set_min_size(Size2(750, 420) * EDSCALE);
-
-		// TODO: Resize windows on hiDPI displays on Windows and Linux and remove the lines below
-		float scale_factor = MAX(1, EDSCALE);
-		Vector2i window_size = DisplayServer::get_singleton()->window_get_size();
-		DisplayServer::get_singleton()->window_set_size(Vector2i(window_size.x * scale_factor, window_size.y * scale_factor));
+		EditorFileDialog::get_icon_func = &ProjectManager::_file_dialog_get_icon;
 	}
 
 	// TRANSLATORS: This refers to the application where users manage their Godot projects.
 	DisplayServer::get_singleton()->window_set_title(VERSION_NAME + String(" - ") + TTR("Project Manager"));
 
-	FileDialog::set_default_show_hidden_files(EditorSettings::get_singleton()->get("filesystem/file_dialog/show_hidden_files"));
+	EditorFileDialog::set_default_show_hidden_files(EditorSettings::get_singleton()->get("filesystem/file_dialog/show_hidden_files"));
 
 	set_anchors_and_offsets_preset(Control::PRESET_WIDE);
 	set_theme(create_custom_theme());
@@ -2746,9 +2762,10 @@ ProjectManager::ProjectManager() {
 		language_restart_ask->get_cancel_button()->set_text(TTR("Continue"));
 		add_child(language_restart_ask);
 
-		scan_dir = memnew(FileDialog);
-		scan_dir->set_access(FileDialog::ACCESS_FILESYSTEM);
-		scan_dir->set_file_mode(FileDialog::FILE_MODE_OPEN_DIR);
+		scan_dir = memnew(EditorFileDialog);
+		scan_dir->set_previews_enabled(false);
+		scan_dir->set_access(EditorFileDialog::ACCESS_FILESYSTEM);
+		scan_dir->set_file_mode(EditorFileDialog::FILE_MODE_OPEN_DIR);
 		scan_dir->set_title(TTR("Select a Folder to Scan")); // must be after mode or it's overridden
 		scan_dir->set_current_dir(EditorSettings::get_singleton()->get("filesystem/directories/default_project_path"));
 		add_child(scan_dir);
@@ -2812,6 +2829,8 @@ ProjectManager::ProjectManager() {
 
 		about = memnew(EditorAbout);
 		add_child(about);
+
+		_build_icon_type_cache(get_theme());
 	}
 
 	_load_recent_projects();
@@ -2840,10 +2859,27 @@ ProjectManager::ProjectManager() {
 
 	SceneTree::get_singleton()->get_root()->connect("files_dropped", callable_mp(this, &ProjectManager::_files_dropped));
 
+	// Define a minimum window size to prevent UI elements from overlapping or being cut off
+	DisplayServer::get_singleton()->window_set_min_size(Size2(750, 420) * EDSCALE);
+
+	// Resize the bootsplash window based on Editor display scale EDSCALE.
+	float scale_factor = MAX(1, EDSCALE);
+	if (scale_factor > 1.0) {
+		Vector2i window_size = DisplayServer::get_singleton()->window_get_size();
+		Vector2i screen_size = DisplayServer::get_singleton()->screen_get_size();
+		window_size *= scale_factor;
+		Vector2i window_position;
+		window_position.x = (screen_size.x - window_size.x) / 2;
+		window_position.y = (screen_size.y - window_size.y) / 2;
+		DisplayServer::get_singleton()->window_set_size(window_size);
+		DisplayServer::get_singleton()->window_set_position(window_position);
+	}
+
 	OS::get_singleton()->set_low_processor_usage_mode(true);
 }
 
 ProjectManager::~ProjectManager() {
+	singleton = nullptr;
 	if (EditorSettings::get_singleton()) {
 		EditorSettings::destroy();
 	}
