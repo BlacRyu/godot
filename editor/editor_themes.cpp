@@ -277,6 +277,7 @@ void editor_register_and_generate_icons(Ref<Theme> p_theme, bool p_dark_theme = 
 		exceptions.insert("StatusSuccess");
 		exceptions.insert("StatusWarning");
 		exceptions.insert("OverbrightIndicator");
+		exceptions.insert("GuiMiniCheckerboard");
 	}
 
 	// These ones should be converted even if we are using a dark theme.
@@ -1543,7 +1544,8 @@ Ref<Theme> create_editor_theme(const Ref<Theme> p_theme) {
 	const Color completion_background_color = dark_theme ? base_color : background_color;
 	const Color completion_selected_color = alpha1;
 	const Color completion_existing_color = alpha2;
-	const Color completion_scroll_color = alpha1;
+	// Same opacity as the scroll grabber editor icon.
+	const Color completion_scroll_color = Color(mono_value, mono_value, mono_value, 0.29);
 	const Color completion_font_color = font_color;
 	const Color text_color = font_color;
 	const Color line_number_color = dim_color;

@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" ?>
-<class name="RichTextLabel" inherits="Control" version="4.0">
+<class name="RichTextLabel" inherits="Control" version="4.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../class.xsd">
 	<brief_description>
 		Label that displays rich text.
 	</brief_description>
@@ -47,6 +47,20 @@
 			<return type="void" />
 			<description>
 				Clears the tag stack and sets [member text] to an empty string.
+			</description>
+		</method>
+		<method name="get_character_line">
+			<return type="int" />
+			<argument index="0" name="character" type="int" />
+			<description>
+				Returns the line number of the character position provided.
+			</description>
+		</method>
+		<method name="get_character_paragraph">
+			<return type="int" />
+			<argument index="0" name="character" type="int" />
+			<description>
+				Returns the paragraph number of the character position provided.
 			</description>
 		</method>
 		<method name="get_content_height" qualifiers="const">
