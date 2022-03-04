@@ -1424,7 +1424,7 @@ void GDScriptAnalyzer::resolve_variable(GDScriptParser::VariableNode *p_variable
 				parser->push_warning(p_variable->initializer, GDScriptWarning::NARROWING_CONVERSION);
 #endif
 			}
-			if (p_variable->initializer->get_datatype().is_variant()) {
+			if (p_variable->initializer->get_datatype().is_variant() && !type.is_variant()) {
 				// TODO: Warn unsafe assign.
 				mark_node_unsafe(p_variable->initializer);
 				p_variable->use_conversion_assign = true;
@@ -2575,18 +2575,24 @@ void GDScriptAnalyzer::reduce_get_node(GDScriptParser::GetNodeNode *p_get_node) 
 }
 
 GDScriptParser::DataType GDScriptAnalyzer::make_global_class_meta_type(const StringName &p_class_name, const GDScriptParser::Node *p_source) {
-	Ref<GDScriptParserRef> ref = get_parser_for(ScriptServer::get_global_class_path(p_class_name));
-	Error err = ref->raise_status(GDScriptParserRef::INTERFACE_SOLVED);
+	GDScriptParser::DataType type;
 
-	if (err) {
-		push_error(vformat(R"(Could not resolve class "%s", because of a parser error.)", p_class_name), p_source);
-		GDScriptParser::DataType type;
+	Ref<GDScriptParserRef> ref = get_parser_for(ScriptServer::get_global_class_path(p_class_name));
+	if (ref.is_null()) {
+		push_error(vformat(R"(Could not find script for class "%s".)", p_class_name), p_source);
 		type.type_source = GDScriptParser::DataType::UNDETECTED;
 		type.kind = GDScriptParser::DataType::VARIANT;
 		return type;
 	}
 
-	GDScriptParser::DataType type;
+	Error err = ref->raise_status(GDScriptParserRef::INTERFACE_SOLVED);
+	if (err) {
+		push_error(vformat(R"(Could not resolve class "%s", because of a parser error.)", p_class_name), p_source);
+		type.type_source = GDScriptParser::DataType::UNDETECTED;
+		type.kind = GDScriptParser::DataType::VARIANT;
+		return type;
+	}
+
 	type.type_source = GDScriptParser::DataType::ANNOTATED_EXPLICIT;
 	type.kind = GDScriptParser::DataType::CLASS;
 	type.builtin_type = Variant::OBJECT;
