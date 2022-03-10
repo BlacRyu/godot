@@ -138,7 +138,7 @@ float CSGShape3D::get_snap() const {
 
 void CSGShape3D::_make_dirty(bool p_parent_removing) {
 	if ((p_parent_removing || is_root_shape()) && !dirty) {
-		call_deferred("_update_shape"); // Must be deferred; otherwise, is_root_shape() will use the previous parent
+		call_deferred(SNAME("_update_shape")); // Must be deferred; otherwise, is_root_shape() will use the previous parent
 	}
 
 	if (!is_root_shape()) {
@@ -280,7 +280,7 @@ void CSGShape3D::mikktSetTSpaceDefault(const SMikkTSpaceContext *pContext, const
 }
 
 void CSGShape3D::_update_shape() {
-	if (!is_root_shape() || !is_inside_tree()) {
+	if (!is_root_shape()) {
 		return;
 	}
 
@@ -489,10 +489,6 @@ Vector<Vector3> CSGShape3D::get_brush_faces() {
 	}
 
 	return faces;
-}
-
-Vector<Face3> CSGShape3D::get_faces(uint32_t p_usage_flags) const {
-	return Vector<Face3>();
 }
 
 void CSGShape3D::_notification(int p_what) {
