@@ -1,5 +1,5 @@
 /*************************************************************************/
-/*  openxr_util.h                                                        */
+/*  editor_property_name_processor.h                                     */
 /*************************************************************************/
 /*                       This file is part of:                           */
 /*                           GODOT ENGINE                                */
@@ -28,20 +28,31 @@
 /* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                */
 /*************************************************************************/
 
-#ifndef OPENXR_UTIL_H
-#define OPENXR_UTIL_H
+#ifndef EDITOR_PROPERTY_NAME_PROCESSOR_H
+#define EDITOR_PROPERTY_NAME_PROCESSOR_H
 
-#include "core/string/ustring.h"
-#include <openxr/openxr.h>
+#include "scene/main/node.h"
 
-class OpenXRUtil {
+class EditorPropertyNameProcessor : public Node {
+	GDCLASS(EditorPropertyNameProcessor, Node);
+
+	static EditorPropertyNameProcessor *singleton;
+
+	Map<String, String> capitalize_string_remaps;
+
+	String _capitalize_name(const String &p_name) const;
+
 public:
-	static String get_view_configuration_name(XrViewConfigurationType p_view_configuration);
-	static String get_reference_space_name(XrReferenceSpaceType p_reference_space);
-	static String get_structure_type_name(XrStructureType p_structure_type);
-	static String get_session_state_name(XrSessionState p_session_state);
-	static String get_action_type_name(XrActionType p_action_type);
-	static String make_xr_version_string(XrVersion p_version);
+	static EditorPropertyNameProcessor *get_singleton() { return singleton; }
+
+	// Capitalize & localize property path segments.
+	String process_name(const String &p_name) const;
+
+	// Make tooltip string for names processed by process_name().
+	String make_tooltip_for_name(const String &p_name) const;
+
+	EditorPropertyNameProcessor();
+	~EditorPropertyNameProcessor();
 };
 
-#endif // !OPENXR_UTIL_H
+#endif // EDITOR_PROPERTY_NAME_PROCESSOR_H
