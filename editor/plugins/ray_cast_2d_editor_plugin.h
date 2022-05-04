@@ -1,5 +1,5 @@
 /*************************************************************************/
-/*  canvas_texture_storage.h                                             */
+/*  ray_cast_2d_editor_plugin.h                                          */
 /*************************************************************************/
 /*                       This file is part of:                           */
 /*                           GODOT ENGINE                                */
@@ -28,24 +28,52 @@
 /* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                */
 /*************************************************************************/
 
-#ifndef CANVAS_TEXTURE_STORAGE_H
-#define CANVAS_TEXTURE_STORAGE_H
+#ifndef RAY_CAST_2D_EDITOR_PLUGIN_H
+#define RAY_CAST_2D_EDITOR_PLUGIN_H
 
-#include "servers/rendering_server.h"
+#include "editor/editor_plugin.h"
+#include "scene/2d/ray_cast_2d.h"
 
-class RendererCanvasTextureStorage {
+class CanvasItemEditor;
+
+class RayCast2DEditor : public Control {
+	GDCLASS(RayCast2DEditor, Control);
+
+	UndoRedo *undo_redo = nullptr;
+	CanvasItemEditor *canvas_item_editor = nullptr;
+	RayCast2D *node;
+
+	bool pressed = false;
+	Point2 original_target_position;
+
+protected:
+	void _notification(int p_what);
+	void _node_removed(Node *p_node);
+
 public:
-	virtual ~RendererCanvasTextureStorage(){};
+	bool forward_canvas_gui_input(const Ref<InputEvent> &p_event);
+	void forward_canvas_draw_over_viewport(Control *p_overlay);
+	void edit(Node *p_node);
 
-	virtual RID canvas_texture_allocate() = 0;
-	virtual void canvas_texture_initialize(RID p_rid) = 0;
-	virtual void canvas_texture_free(RID p_rid) = 0;
-
-	virtual void canvas_texture_set_channel(RID p_canvas_texture, RS::CanvasTextureChannel p_channel, RID p_texture) = 0;
-	virtual void canvas_texture_set_shading_parameters(RID p_canvas_texture, const Color &p_base_color, float p_shininess) = 0;
-
-	virtual void canvas_texture_set_texture_filter(RID p_item, RS::CanvasItemTextureFilter p_filter) = 0;
-	virtual void canvas_texture_set_texture_repeat(RID p_item, RS::CanvasItemTextureRepeat p_repeat) = 0;
+	RayCast2DEditor();
 };
 
-#endif // !CANVAS_TEXTURE_STORAGE_H
+class RayCast2DEditorPlugin : public EditorPlugin {
+	GDCLASS(RayCast2DEditorPlugin, EditorPlugin);
+
+	RayCast2DEditor *ray_cast_2d_editor = nullptr;
+
+public:
+	virtual bool forward_canvas_gui_input(const Ref<InputEvent> &p_event) override { return ray_cast_2d_editor->forward_canvas_gui_input(p_event); }
+	virtual void forward_canvas_draw_over_viewport(Control *p_overlay) override { ray_cast_2d_editor->forward_canvas_draw_over_viewport(p_overlay); }
+
+	virtual String get_name() const override { return "RayCast2D"; }
+	bool has_main_screen() const override { return false; }
+	virtual void edit(Object *p_object) override;
+	virtual bool handles(Object *p_object) const override;
+	virtual void make_visible(bool visible) override;
+
+	RayCast2DEditorPlugin();
+};
+
+#endif // RAY_CAST_2D_EDITOR_PLUGIN_H

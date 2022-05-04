@@ -1,5 +1,5 @@
 /*************************************************************************/
-/*  decal_atlas_storage.h                                                */
+/*  noise_editor_plugin.h                                                */
 /*************************************************************************/
 /*                       This file is part of:                           */
 /*                           GODOT ENGINE                                */
@@ -28,33 +28,22 @@
 /* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                */
 /*************************************************************************/
 
-#ifndef DECAL_ATLAS_STORAGE_H
-#define DECAL_ATLAS_STORAGE_H
+#ifndef NOISE_EDITOR_PLUGIN_H
+#define NOISE_EDITOR_PLUGIN_H
 
-#include "servers/rendering_server.h"
+#ifdef TOOLS_ENABLED
 
-class RendererDecalAtlasStorage {
+#include "editor/editor_plugin.h"
+
+class NoiseEditorPlugin : public EditorPlugin {
+	GDCLASS(NoiseEditorPlugin, EditorPlugin)
+
 public:
-	virtual ~RendererDecalAtlasStorage(){};
+	String get_name() const override;
 
-	virtual RID decal_allocate() = 0;
-	virtual void decal_initialize(RID p_rid) = 0;
-	virtual void decal_free(RID p_rid) = 0;
-
-	virtual void decal_set_extents(RID p_decal, const Vector3 &p_extents) = 0;
-	virtual void decal_set_texture(RID p_decal, RS::DecalTexture p_type, RID p_texture) = 0;
-	virtual void decal_set_emission_energy(RID p_decal, float p_energy) = 0;
-	virtual void decal_set_albedo_mix(RID p_decal, float p_mix) = 0;
-	virtual void decal_set_modulate(RID p_decal, const Color &p_modulate) = 0;
-	virtual void decal_set_cull_mask(RID p_decal, uint32_t p_layers) = 0;
-	virtual void decal_set_distance_fade(RID p_decal, bool p_enabled, float p_begin, float p_length) = 0;
-	virtual void decal_set_fade(RID p_decal, float p_above, float p_below) = 0;
-	virtual void decal_set_normal_fade(RID p_decal, float p_fade) = 0;
-
-	virtual AABB decal_get_aabb(RID p_decal) const = 0;
-
-	virtual void texture_add_to_decal_atlas(RID p_texture, bool p_panorama_to_dp = false) = 0;
-	virtual void texture_remove_from_decal_atlas(RID p_texture, bool p_panorama_to_dp = false) = 0;
+	NoiseEditorPlugin();
 };
 
-#endif // !DECAL_ATLAS_STORAGE_H
+#endif // TOOLS_ENABLED
+
+#endif // NOISE_EDITOR_PLUGIN_H

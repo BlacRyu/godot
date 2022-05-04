@@ -1,5 +1,5 @@
 /*************************************************************************/
-/*  canvas_texture_storage.cpp                                           */
+/*  tts_ios.h                                                            */
 /*************************************************************************/
 /*                       This file is part of:                           */
 /*                           GODOT ENGINE                                */
@@ -28,69 +28,32 @@
 /* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                */
 /*************************************************************************/
 
-#ifdef GLES3_ENABLED
+#ifndef TTS_IOS_H
+#define TTS_IOS_H
 
-#include "canvas_texture_storage.h"
+#include <AVFAudio/AVSpeechSynthesis.h>
 
-using namespace GLES3;
+#include "core/string/ustring.h"
+#include "core/templates/list.h"
+#include "core/templates/map.h"
+#include "core/variant/array.h"
+#include "servers/display_server.h"
 
-CanvasTextureStorage *CanvasTextureStorage::singleton = nullptr;
+@interface TTS_IOS : NSObject <AVSpeechSynthesizerDelegate> {
+	bool speaking;
+	Map<id, int> ids;
 
-CanvasTextureStorage *CanvasTextureStorage::get_singleton() {
-	return singleton;
+	AVSpeechSynthesizer *av_synth;
+	List<DisplayServer::TTSUtterance> queue;
 }
 
-CanvasTextureStorage::CanvasTextureStorage() {
-	singleton = this;
-}
+- (void)pauseSpeaking;
+- (void)resumeSpeaking;
+- (void)stopSpeaking;
+- (bool)isSpeaking;
+- (bool)isPaused;
+- (void)speak:(const String &)text voice:(const String &)voice volume:(int)volume pitch:(float)pitch rate:(float)rate utterance_id:(int)utterance_id interrupt:(bool)interrupt;
+- (Array)getVoices;
+@end
 
-CanvasTextureStorage::~CanvasTextureStorage() {
-	singleton = nullptr;
-}
-
-RID CanvasTextureStorage::canvas_texture_allocate() {
-	return canvas_texture_owner.allocate_rid();
-}
-
-void CanvasTextureStorage::canvas_texture_initialize(RID p_rid) {
-	canvas_texture_owner.initialize_rid(p_rid);
-}
-
-void CanvasTextureStorage::canvas_texture_free(RID p_rid) {
-	canvas_texture_owner.free(p_rid);
-}
-
-void CanvasTextureStorage::canvas_texture_set_channel(RID p_canvas_texture, RS::CanvasTextureChannel p_channel, RID p_texture) {
-	CanvasTexture *ct = canvas_texture_owner.get_or_null(p_canvas_texture);
-	switch (p_channel) {
-		case RS::CANVAS_TEXTURE_CHANNEL_DIFFUSE: {
-			ct->diffuse = p_texture;
-		} break;
-		case RS::CANVAS_TEXTURE_CHANNEL_NORMAL: {
-			ct->normal_map = p_texture;
-		} break;
-		case RS::CANVAS_TEXTURE_CHANNEL_SPECULAR: {
-			ct->specular = p_texture;
-		} break;
-	}
-}
-
-void CanvasTextureStorage::canvas_texture_set_shading_parameters(RID p_canvas_texture, const Color &p_specular_color, float p_shininess) {
-	CanvasTexture *ct = canvas_texture_owner.get_or_null(p_canvas_texture);
-	ct->specular_color.r = p_specular_color.r;
-	ct->specular_color.g = p_specular_color.g;
-	ct->specular_color.b = p_specular_color.b;
-	ct->specular_color.a = p_shininess;
-}
-
-void CanvasTextureStorage::canvas_texture_set_texture_filter(RID p_canvas_texture, RS::CanvasItemTextureFilter p_filter) {
-	CanvasTexture *ct = canvas_texture_owner.get_or_null(p_canvas_texture);
-	ct->texture_filter = p_filter;
-}
-
-void CanvasTextureStorage::canvas_texture_set_texture_repeat(RID p_canvas_texture, RS::CanvasItemTextureRepeat p_repeat) {
-	CanvasTexture *ct = canvas_texture_owner.get_or_null(p_canvas_texture);
-	ct->texture_repeat = p_repeat;
-}
-
-#endif // !GLES3_ENABLED
+#endif // TTS_IOS_H

@@ -1,5 +1,5 @@
 /*************************************************************************/
-/*  canvas_texture_storage.h                                             */
+/*  tts_linux.h                                                          */
 /*************************************************************************/
 /*                       This file is part of:                           */
 /*                           GODOT ENGINE                                */
@@ -28,60 +28,51 @@
 /* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                */
 /*************************************************************************/
 
-#ifndef CANVAS_TEXTURE_STORAGE_GLES3_H
-#define CANVAS_TEXTURE_STORAGE_GLES3_H
+#ifndef TTS_LINUX_H
+#define TTS_LINUX_H
 
-#ifdef GLES3_ENABLED
+#include "core/os/thread.h"
+#include "core/os/thread_safe.h"
+#include "core/string/ustring.h"
+#include "core/templates/list.h"
+#include "core/templates/map.h"
+#include "core/variant/array.h"
+#include "servers/display_server.h"
 
-#include "core/templates/rid_owner.h"
-#include "servers/rendering/storage/canvas_texture_storage.h"
+#include "speechd-so_wrap.h"
 
-namespace GLES3 {
+class TTS_Linux {
+	_THREAD_SAFE_CLASS_
 
-struct CanvasTexture {
-	RID diffuse;
-	RID normal_map;
-	RID specular;
-	Color specular_color = Color(1, 1, 1, 1);
-	float shininess = 1.0;
+	List<DisplayServer::TTSUtterance> queue;
+	SPDConnection *synth = nullptr;
+	bool speaking = false;
+	bool paused = false;
+	int last_msg_id = -1;
+	Map<int, int> ids;
 
-	RS::CanvasItemTextureFilter texture_filter = RS::CANVAS_ITEM_TEXTURE_FILTER_DEFAULT;
-	RS::CanvasItemTextureRepeat texture_repeat = RS::CANVAS_ITEM_TEXTURE_REPEAT_DEFAULT;
+	Thread init_thread;
 
-	Size2i size_cache = Size2i(1, 1);
-	bool use_normal_cache = false;
-	bool use_specular_cache = false;
-	bool cleared_cache = true;
-};
+	static void speech_init_thread_func(void *p_userdata);
+	static void speech_event_callback(size_t p_msg_id, size_t p_client_id, SPDNotificationType p_type);
+	static void speech_event_index_mark(size_t p_msg_id, size_t p_client_id, SPDNotificationType p_type, char *p_index_mark);
 
-class CanvasTextureStorage : public RendererCanvasTextureStorage {
-private:
-	static CanvasTextureStorage *singleton;
-
-	RID_Owner<CanvasTexture, true> canvas_texture_owner;
+	static TTS_Linux *singleton;
 
 public:
-	static CanvasTextureStorage *get_singleton();
+	static TTS_Linux *get_singleton();
 
-	CanvasTextureStorage();
-	virtual ~CanvasTextureStorage();
+	bool is_speaking() const;
+	bool is_paused() const;
+	Array get_voices() const;
 
-	CanvasTexture *get_canvas_texture(RID p_rid) { return canvas_texture_owner.get_or_null(p_rid); };
-	bool owns_canvas_texture(RID p_rid) { return canvas_texture_owner.owns(p_rid); };
+	void speak(const String &p_text, const String &p_voice, int p_volume = 50, float p_pitch = 1.f, float p_rate = 1.f, int p_utterance_id = 0, bool p_interrupt = false);
+	void pause();
+	void resume();
+	void stop();
 
-	virtual RID canvas_texture_allocate() override;
-	virtual void canvas_texture_initialize(RID p_rid) override;
-	virtual void canvas_texture_free(RID p_rid) override;
-
-	virtual void canvas_texture_set_channel(RID p_canvas_texture, RS::CanvasTextureChannel p_channel, RID p_texture) override;
-	virtual void canvas_texture_set_shading_parameters(RID p_canvas_texture, const Color &p_base_color, float p_shininess) override;
-
-	virtual void canvas_texture_set_texture_filter(RID p_item, RS::CanvasItemTextureFilter p_filter) override;
-	virtual void canvas_texture_set_texture_repeat(RID p_item, RS::CanvasItemTextureRepeat p_repeat) override;
+	TTS_Linux();
+	~TTS_Linux();
 };
 
-} // namespace GLES3
-
-#endif // !GLES3_ENABLED
-
-#endif // !CANVAS_TEXTURE_STORAGE_GLES3_H
+#endif // TTS_LINUX_H

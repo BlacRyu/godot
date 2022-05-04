@@ -1,5 +1,5 @@
 /*************************************************************************/
-/*  decal_atlas_storage.h                                                */
+/*  GodotUtterance.java                                                  */
 /*************************************************************************/
 /*                       This file is part of:                           */
 /*                           GODOT ENGINE                                */
@@ -28,40 +28,28 @@
 /* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                */
 /*************************************************************************/
 
-#ifndef DECAL_ATLAS_STORAGE_GLES3_H
-#define DECAL_ATLAS_STORAGE_GLES3_H
+package org.godotengine.godot.tts;
 
-#ifdef GLES3_ENABLED
+/**
+ * A speech request for GodotTTS.
+ */
+class GodotUtterance {
+	final String text;
+	final String voice;
+	final int volume;
+	final float pitch;
+	final float rate;
+	final int id;
 
-#include "core/templates/rid_owner.h"
-#include "servers/rendering/storage/decal_atlas_storage.h"
+	int offset = -1;
+	int start = 0;
 
-namespace GLES3 {
-
-class DecalAtlasStorage : public RendererDecalAtlasStorage {
-public:
-	virtual RID decal_allocate() override;
-	virtual void decal_initialize(RID p_rid) override;
-	virtual void decal_free(RID p_rid) override{};
-
-	virtual void decal_set_extents(RID p_decal, const Vector3 &p_extents) override;
-	virtual void decal_set_texture(RID p_decal, RS::DecalTexture p_type, RID p_texture) override;
-	virtual void decal_set_emission_energy(RID p_decal, float p_energy) override;
-	virtual void decal_set_albedo_mix(RID p_decal, float p_mix) override;
-	virtual void decal_set_modulate(RID p_decal, const Color &p_modulate) override;
-	virtual void decal_set_cull_mask(RID p_decal, uint32_t p_layers) override;
-	virtual void decal_set_distance_fade(RID p_decal, bool p_enabled, float p_begin, float p_length) override;
-	virtual void decal_set_fade(RID p_decal, float p_above, float p_below) override;
-	virtual void decal_set_normal_fade(RID p_decal, float p_fade) override;
-
-	virtual AABB decal_get_aabb(RID p_decal) const override;
-
-	virtual void texture_add_to_decal_atlas(RID p_texture, bool p_panorama_to_dp = false) override {}
-	virtual void texture_remove_from_decal_atlas(RID p_texture, bool p_panorama_to_dp = false) override {}
-};
-
-} // namespace GLES3
-
-#endif // !GLES3_ENABLED
-
-#endif // !DECAL_ATLAS_STORAGE_GLES3_H
+	GodotUtterance(String text, String voice, int volume, float pitch, float rate, int id) {
+		this.text = text;
+		this.voice = voice;
+		this.volume = volume;
+		this.pitch = pitch;
+		this.rate = rate;
+		this.id = id;
+	}
+}

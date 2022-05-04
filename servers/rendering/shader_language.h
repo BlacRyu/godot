@@ -874,11 +874,11 @@ private:
 
 	static const KeyWord keyword_list[];
 
-	GlobalVariableGetTypeFunc global_var_get_type_func;
+	GlobalVariableGetTypeFunc global_var_get_type_func = nullptr;
 
-	bool error_set;
+	bool error_set = false;
 	String error_str;
-	int error_line;
+	int error_line = 0;
 
 #ifdef DEBUG_ENABLED
 	struct Usage {
@@ -902,7 +902,7 @@ private:
 	List<ShaderWarning> warnings;
 
 	bool check_warnings = false;
-	uint32_t warning_flags;
+	uint32_t warning_flags = 0;
 
 	void _add_line_warning(ShaderWarning::Code p_code, const StringName &p_subject = "", const Vector<Variant> &p_extra_args = Vector<Variant>()) {
 		warnings.push_back(ShaderWarning(p_code, tk_line, p_subject, p_extra_args));
@@ -917,8 +917,8 @@ private:
 #endif // DEBUG_ENABLED
 
 	String code;
-	int char_idx;
-	int tk_line;
+	int char_idx = 0;
+	int tk_line = 0;
 
 	StringName current_function;
 	bool last_const = false;
@@ -1020,14 +1020,14 @@ private:
 	};
 
 	CompletionType completion_type;
-	int completion_line;
+	int completion_line = 0;
 	BlockNode *completion_block = nullptr;
 	DataType completion_base;
-	bool completion_base_array;
+	bool completion_base_array = false;
 	SubClassTag completion_class;
 	StringName completion_function;
 	StringName completion_struct;
-	int completion_argument;
+	int completion_argument = 0;
 
 	const Map<StringName, FunctionInfo> *stages = nullptr;
 
@@ -1038,6 +1038,7 @@ private:
 
 	static bool is_const_suffix_lut_initialized;
 
+	Error _validate_precision(DataType p_type, DataPrecision p_precision);
 	Error _validate_datatype(DataType p_type);
 	bool _compare_datatypes(DataType p_datatype_a, String p_datatype_name_a, int p_array_size_a, DataType p_datatype_b, String p_datatype_name_b, int p_array_size_b);
 	bool _compare_datatypes_in_nodes(Node *a, Node *b);

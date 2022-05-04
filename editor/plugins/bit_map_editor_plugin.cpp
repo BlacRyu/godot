@@ -1,5 +1,5 @@
 /*************************************************************************/
-/*  canvas_texture_storage.h                                             */
+/*  bit_map_editor_plugin.cpp                                            */
 /*************************************************************************/
 /*                       This file is part of:                           */
 /*                           GODOT ENGINE                                */
@@ -28,26 +28,59 @@
 /* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                */
 /*************************************************************************/
 
-#ifndef CANVAS_TEXTURE_STORAGE_DUMMY_H
-#define CANVAS_TEXTURE_STORAGE_DUMMY_H
+#include "bit_map_editor_plugin.h"
 
-#include "servers/rendering/storage/canvas_texture_storage.h"
+#include "editor/editor_scale.h"
 
-namespace RendererDummy {
+void BitMapEditor::setup(const Ref<BitMap> &p_bitmap) {
+	Ref<ImageTexture> texture;
+	texture.instantiate();
+	texture->create_from_image(p_bitmap->convert_to_image());
+	texture_rect->set_texture(texture);
 
-class CanvasTextureStorage : public RendererCanvasTextureStorage {
-public:
-	virtual RID canvas_texture_allocate() override { return RID(); };
-	virtual void canvas_texture_initialize(RID p_rid) override{};
-	virtual void canvas_texture_free(RID p_rid) override{};
+	size_label->set_text(vformat(String::utf8("%s×%s"), p_bitmap->get_size().width, p_bitmap->get_size().height));
+}
 
-	virtual void canvas_texture_set_channel(RID p_canvas_texture, RS::CanvasTextureChannel p_channel, RID p_texture) override{};
-	virtual void canvas_texture_set_shading_parameters(RID p_canvas_texture, const Color &p_base_color, float p_shininess) override{};
+BitMapEditor::BitMapEditor() {
+	texture_rect = memnew(TextureRect);
+	texture_rect->set_stretch_mode(TextureRect::STRETCH_KEEP_ASPECT_CENTERED);
+	texture_rect->set_texture_filter(TEXTURE_FILTER_NEAREST);
+	texture_rect->set_custom_minimum_size(Size2(0, 250) * EDSCALE);
+	add_child(texture_rect);
 
-	virtual void canvas_texture_set_texture_filter(RID p_item, RS::CanvasItemTextureFilter p_filter) override{};
-	virtual void canvas_texture_set_texture_repeat(RID p_item, RS::CanvasItemTextureRepeat p_repeat) override{};
-};
+	size_label = memnew(Label);
+	size_label->set_horizontal_alignment(HORIZONTAL_ALIGNMENT_RIGHT);
+	add_child(size_label);
 
-} // namespace RendererDummy
+	// Reduce extra padding on top and bottom of size label.
+	Ref<StyleBoxEmpty> stylebox;
+	stylebox.instantiate();
+	stylebox->set_default_margin(SIDE_RIGHT, 4 * EDSCALE);
+	size_label->add_theme_style_override("normal", stylebox);
+}
 
-#endif // !CANVAS_TEXTURE_STORAGE_DUMMY_H
+///////////////////////
+
+bool EditorInspectorPluginBitMap::can_handle(Object *p_object) {
+	return Object::cast_to<BitMap>(p_object) != nullptr;
+}
+
+void EditorInspectorPluginBitMap::parse_begin(Object *p_object) {
+	BitMap *bitmap = Object::cast_to<BitMap>(p_object);
+	if (!bitmap) {
+		return;
+	}
+	Ref<BitMap> bm(bitmap);
+
+	BitMapEditor *editor = memnew(BitMapEditor);
+	editor->setup(bm);
+	add_custom_control(editor);
+}
+
+///////////////////////
+
+BitMapEditorPlugin::BitMapEditorPlugin() {
+	Ref<EditorInspectorPluginBitMap> plugin;
+	plugin.instantiate();
+	add_inspector_plugin(plugin);
+}

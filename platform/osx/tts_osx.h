@@ -1,5 +1,5 @@
 /*************************************************************************/
-/*  decal_atlas_storage.h                                                */
+/*  tts_osx.h                                                            */
 /*************************************************************************/
 /*                       This file is part of:                           */
 /*                           GODOT ENGINE                                */
@@ -28,35 +28,39 @@
 /* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                */
 /*************************************************************************/
 
-#ifndef DECAL_ATLAS_STORAGE_DUMMY_H
-#define DECAL_ATLAS_STORAGE_DUMMY_H
+#ifndef TTS_OSX_H
+#define TTS_OSX_H
 
-#include "servers/rendering/storage/decal_atlas_storage.h"
+#include "core/string/ustring.h"
+#include "core/templates/list.h"
+#include "core/templates/map.h"
+#include "core/variant/array.h"
+#include "servers/display_server.h"
 
-namespace RendererDummy {
+#include <AVFAudio/AVSpeechSynthesis.h>
+#include <AppKit/AppKit.h>
 
-class DecalAtlasStorage : public RendererDecalAtlasStorage {
-public:
-	virtual RID decal_allocate() override { return RID(); }
-	virtual void decal_initialize(RID p_rid) override {}
-	virtual void decal_free(RID p_rid) override{};
+@interface TTS_OSX : NSObject <AVSpeechSynthesizerDelegate> {
+	// AVSpeechSynthesizer
+	bool speaking;
+	Map<id, int> ids;
 
-	virtual void decal_set_extents(RID p_decal, const Vector3 &p_extents) override {}
-	virtual void decal_set_texture(RID p_decal, RS::DecalTexture p_type, RID p_texture) override {}
-	virtual void decal_set_emission_energy(RID p_decal, float p_energy) override {}
-	virtual void decal_set_albedo_mix(RID p_decal, float p_mix) override {}
-	virtual void decal_set_modulate(RID p_decal, const Color &p_modulate) override {}
-	virtual void decal_set_cull_mask(RID p_decal, uint32_t p_layers) override {}
-	virtual void decal_set_distance_fade(RID p_decal, bool p_enabled, float p_begin, float p_length) override {}
-	virtual void decal_set_fade(RID p_decal, float p_above, float p_below) override {}
-	virtual void decal_set_normal_fade(RID p_decal, float p_fade) override {}
+	// NSSpeechSynthesizer
+	bool paused;
+	bool have_utterance;
+	int last_utterance;
 
-	virtual AABB decal_get_aabb(RID p_decal) const override { return AABB(); }
+	id synth; // NSSpeechSynthesizer or AVSpeechSynthesizer
+	List<DisplayServer::TTSUtterance> queue;
+}
 
-	virtual void texture_add_to_decal_atlas(RID p_texture, bool p_panorama_to_dp = false) override {}
-	virtual void texture_remove_from_decal_atlas(RID p_texture, bool p_panorama_to_dp = false) override {}
-};
+- (void)pauseSpeaking;
+- (void)resumeSpeaking;
+- (void)stopSpeaking;
+- (bool)isSpeaking;
+- (bool)isPaused;
+- (void)speak:(const String &)text voice:(const String &)voice volume:(int)volume pitch:(float)pitch rate:(float)rate utterance_id:(int)utterance_id interrupt:(bool)interrupt;
+- (Array)getVoices;
+@end
 
-} // namespace RendererDummy
-
-#endif // !DECAL_ATLAS_STORAGE_DUMMY_H
+#endif // TTS_OSX_H

@@ -48,7 +48,7 @@ class VisualShaderNodePlugin : public RefCounted {
 protected:
 	static void _bind_methods();
 
-	GDVIRTUAL2RC(Object *, _create_editor, RES, Ref<VisualShaderNode>)
+	GDVIRTUAL2RC(Object *, _create_editor, Ref<Resource>, Ref<VisualShaderNode>)
 
 public:
 	virtual Control *create_editor(const Ref<Resource> &p_parent_resource, const Ref<VisualShaderNode> &p_node);
@@ -85,14 +85,14 @@ private:
 	List<VisualShader::Connection> connections;
 	bool dirty = false;
 
-	Color vector_expanded_color[3];
+	Color vector_expanded_color[4];
 
 protected:
 	static void _bind_methods();
 
 public:
 	void register_shader(VisualShader *p_visual_shader);
-	void set_connections(List<VisualShader::Connection> &p_connections);
+	void set_connections(const List<VisualShader::Connection> &p_connections);
 	void register_link(VisualShader::Type p_type, int p_id, VisualShaderNode *p_visual_node, GraphNode *p_graph_node);
 	void register_output_port(int p_id, int p_port, TextureButton *p_button);
 	void register_uniform_name(int p_id, LineEdit *p_uniform_name);

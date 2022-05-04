@@ -1583,11 +1583,9 @@ bool EditorFileDialog::are_previews_enabled() {
 EditorFileDialog::EditorFileDialog() {
 	show_hidden_files = default_show_hidden_files;
 	display_mode = default_display_mode;
-	local_history_pos = 0;
 	VBoxContainer *vbc = memnew(VBoxContainer);
 	add_child(vbc);
 
-	mode = FILE_MODE_SAVE_FILE;
 	set_title(TTR("Save a File"));
 
 	ED_SHORTCUT("file_dialog/go_back", TTR("Go Back"), KeyModifierMask::ALT | Key::LEFT);
@@ -1631,7 +1629,7 @@ EditorFileDialog::EditorFileDialog() {
 	pathhb->add_child(drives_container);
 
 	dir = memnew(LineEdit);
-	dir->set_structured_text_bidi_override(Control::STRUCTURED_TEXT_FILE);
+	dir->set_structured_text_bidi_override(TextServer::STRUCTURED_TEXT_FILE);
 	pathhb->add_child(dir);
 	dir->set_h_size_flags(Control::SIZE_EXPAND_FILL);
 
@@ -1782,7 +1780,7 @@ EditorFileDialog::EditorFileDialog() {
 	file_box->add_child(l);
 
 	file = memnew(LineEdit);
-	file->set_structured_text_bidi_override(Control::STRUCTURED_TEXT_FILE);
+	file->set_structured_text_bidi_override(TextServer::STRUCTURED_TEXT_FILE);
 	file->set_stretch_ratio(4);
 	file->set_h_size_flags(Control::SIZE_EXPAND_FILL);
 	file_box->add_child(file);
@@ -1795,7 +1793,6 @@ EditorFileDialog::EditorFileDialog() {
 	item_vb->add_child(file_box);
 
 	dir_access = DirAccess::create(DirAccess::ACCESS_RESOURCES);
-	access = ACCESS_RESOURCES;
 	_update_drives();
 
 	connect("confirmed", callable_mp(this, &EditorFileDialog::_action_pressed));
@@ -1808,7 +1805,6 @@ EditorFileDialog::EditorFileDialog() {
 	filter->connect("item_selected", callable_mp(this, &EditorFileDialog::_filter_selected));
 
 	confirm_save = memnew(ConfirmationDialog);
-	//confirm_save->set_as_top_level(true);
 	add_child(confirm_save);
 	confirm_save->connect("confirmed", callable_mp(this, &EditorFileDialog::_save_confirm_pressed));
 
@@ -1826,7 +1822,7 @@ EditorFileDialog::EditorFileDialog() {
 	makedialog->add_child(makevb);
 
 	makedirname = memnew(LineEdit);
-	makedirname->set_structured_text_bidi_override(Control::STRUCTURED_TEXT_FILE);
+	makedirname->set_structured_text_bidi_override(TextServer::STRUCTURED_TEXT_FILE);
 	makevb->add_margin_child(TTR("Name:"), makedirname);
 	add_child(makedialog);
 	makedialog->register_text_enter(makedirname);
@@ -1843,9 +1839,6 @@ EditorFileDialog::EditorFileDialog() {
 	if (register_func) {
 		register_func(this);
 	}
-
-	preview_wheel_timeout = 0;
-	preview_wheel_index = 0;
 }
 
 EditorFileDialog::~EditorFileDialog() {
