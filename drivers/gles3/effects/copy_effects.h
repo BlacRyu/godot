@@ -1,5 +1,5 @@
 /*************************************************************************/
-/*  GodotInstrumentation.java                                            */
+/*  copy_effects.h                                                       */
 /*************************************************************************/
 /*                       This file is part of:                           */
 /*                           GODOT ENGINE                                */
@@ -28,23 +28,46 @@
 /* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                */
 /*************************************************************************/
 
-package org.godotengine.godot;
+#ifndef COPY_GL_H
+#define COPY_GL_H
 
-import android.app.Instrumentation;
-import android.content.Intent;
-import android.os.Bundle;
+#ifdef GLES3_ENABLED
 
-public class GodotInstrumentation extends Instrumentation {
-	private Intent intent;
+#include "../shaders/copy.glsl.gen.h"
 
-	@Override
-	public void onCreate(Bundle arguments) {
-		intent = arguments.getParcelable("intent");
-		start();
-	}
+namespace GLES3 {
 
-	@Override
-	public void onStart() {
-		startActivitySync(intent);
-	}
-}
+class CopyEffects {
+private:
+	struct Copy {
+		CopyShaderGLES3 shader;
+		RID shader_version;
+	} copy;
+
+	static CopyEffects *singleton;
+
+	// Use for full-screen effects. Slightly more efficient than screen_quad as this eliminates pixel overdraw along the diagonal.
+	GLuint screen_triangle = 0;
+	GLuint screen_triangle_array = 0;
+
+	// Use for rect-based effects.
+	GLuint quad = 0;
+	GLuint quad_array = 0;
+
+public:
+	static CopyEffects *get_singleton();
+
+	CopyEffects();
+	~CopyEffects();
+
+	// These functions assume that a framebuffer and texture are bound already. They only manage the shader, uniforms, and vertex array.
+	void copy_to_rect(const Rect2i &p_rect);
+	void copy_screen();
+	void bilinear_blur(GLuint p_source_texture, int p_mipmap_count, const Rect2i &p_region);
+	void set_color(const Color &p_color, const Rect2i &p_region);
+};
+
+} //namespace GLES3
+
+#endif // GLES3_ENABLED
+#endif // !COPY_GL_H
