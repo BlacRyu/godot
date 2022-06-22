@@ -1,5 +1,5 @@
 /*************************************************************************/
-/*  audio_driver_dummy.h                                                 */
+/*  resource_saver_webp.h                                                */
 /*************************************************************************/
 /*                       This file is part of:                           */
 /*                           GODOT ENGINE                                */
@@ -28,61 +28,22 @@
 /* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                */
 /*************************************************************************/
 
-#ifndef AUDIO_DRIVER_DUMMY_H
-#define AUDIO_DRIVER_DUMMY_H
+#ifndef RESOURCE_SAVER_WEBP_H
+#define RESOURCE_SAVER_WEBP_H
 
-#include "servers/audio_server.h"
+#include "core/io/image.h"
+#include "core/io/resource_saver.h"
 
-#include "core/os/mutex.h"
-#include "core/os/thread.h"
-
-class AudioDriverDummy : public AudioDriver {
-	Thread thread;
-	Mutex mutex;
-
-	int32_t *samples_in = nullptr;
-
-	static void thread_func(void *p_udata);
-
-	uint32_t buffer_frames = 4096;
-	int32_t mix_rate = -1;
-	SpeakerMode speaker_mode = SPEAKER_MODE_STEREO;
-
-	int channels;
-
-	bool active;
-	bool thread_exited;
-	mutable bool exit_thread;
-
-	bool use_threads = true;
-
-	static AudioDriverDummy *singleton;
-
+class ResourceSaverWebP : public ResourceFormatSaver {
 public:
-	const char *get_name() const {
-		return "Dummy";
-	};
+	static Error save_image(const String &p_path, const Ref<Image> &p_img, const bool p_lossy = false, const float p_quality = 0.75f);
+	static Vector<uint8_t> save_image_to_buffer(const Ref<Image> &p_img, const bool p_lossy = false, const float p_quality = 0.75f);
 
-	virtual Error init();
-	virtual void start();
-	virtual int get_mix_rate() const;
-	virtual SpeakerMode get_speaker_mode() const;
-	virtual void lock();
-	virtual void unlock();
-	virtual void finish();
+	virtual Error save(const String &p_path, const Ref<Resource> &p_resource, uint32_t p_flags = 0);
+	virtual bool recognize(const Ref<Resource> &p_resource) const;
+	virtual void get_recognized_extensions(const Ref<Resource> &p_resource, List<String> *p_extensions) const;
 
-	void set_use_threads(bool p_use_threads);
-	void set_speaker_mode(SpeakerMode p_mode);
-	void set_mix_rate(int p_rate);
-
-	uint32_t get_channels() const;
-
-	void mix_audio(int p_frames, int32_t *p_buffer);
-
-	static AudioDriverDummy *get_dummy_singleton() { return singleton; }
-
-	AudioDriverDummy();
-	~AudioDriverDummy() {}
+	ResourceSaverWebP();
 };
 
-#endif
+#endif // RESOURCE_SAVER_WEBP_H

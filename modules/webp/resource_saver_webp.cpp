@@ -1,5 +1,5 @@
 /*************************************************************************/
-/*  audio_driver_dummy.h                                                 */
+/*  resource_saver_webp.cpp                                              */
 /*************************************************************************/
 /*                       This file is part of:                           */
 /*                           GODOT ENGINE                                */
@@ -28,61 +28,63 @@
 /* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                */
 /*************************************************************************/
 
-#ifndef AUDIO_DRIVER_DUMMY_H
-#define AUDIO_DRIVER_DUMMY_H
+#include "resource_saver_webp.h"
 
-#include "servers/audio_server.h"
+#include "core/io/file_access.h"
+#include "core/io/image.h"
+#include "scene/resources/texture.h"
+#include "webp_common.h"
 
-#include "core/os/mutex.h"
-#include "core/os/thread.h"
+Error ResourceSaverWebP::save(const String &p_path, const Ref<Resource> &p_resource, uint32_t p_flags) {
+	Ref<ImageTexture> texture = p_resource;
 
-class AudioDriverDummy : public AudioDriver {
-	Thread thread;
-	Mutex mutex;
+	ERR_FAIL_COND_V_MSG(!texture.is_valid(), ERR_INVALID_PARAMETER, "Can't save invalid texture as WEBP.");
+	ERR_FAIL_COND_V_MSG(!texture->get_width(), ERR_INVALID_PARAMETER, "Can't save empty texture as WEBP.");
 
-	int32_t *samples_in = nullptr;
+	Ref<Image> img = texture->get_image();
 
-	static void thread_func(void *p_udata);
+	Error err = save_image(p_path, img);
 
-	uint32_t buffer_frames = 4096;
-	int32_t mix_rate = -1;
-	SpeakerMode speaker_mode = SPEAKER_MODE_STEREO;
+	return err;
+}
 
-	int channels;
+Error ResourceSaverWebP::save_image(const String &p_path, const Ref<Image> &p_img, const bool p_lossy, const float p_quality) {
+	Vector<uint8_t> buffer = save_image_to_buffer(p_img, p_lossy, p_quality);
+	Error err;
+	Ref<FileAccess> file = FileAccess::open(p_path, FileAccess::WRITE, &err);
+	ERR_FAIL_COND_V_MSG(err, err, vformat("Can't save WEBP at path: '%s'.", p_path));
 
-	bool active;
-	bool thread_exited;
-	mutable bool exit_thread;
+	const uint8_t *reader = buffer.ptr();
 
-	bool use_threads = true;
+	file->store_buffer(reader, buffer.size());
+	if (file->get_error() != OK && file->get_error() != ERR_FILE_EOF) {
+		return ERR_CANT_CREATE;
+	}
 
-	static AudioDriverDummy *singleton;
+	return OK;
+}
 
-public:
-	const char *get_name() const {
-		return "Dummy";
-	};
+Vector<uint8_t> ResourceSaverWebP::save_image_to_buffer(const Ref<Image> &p_img, const bool p_lossy, const float p_quality) {
+	Vector<uint8_t> buffer;
+	if (p_lossy) {
+		buffer = WebPCommon::_webp_lossy_pack(p_img, p_quality);
+	} else {
+		buffer = WebPCommon::_webp_lossless_pack(p_img);
+	}
+	return buffer;
+}
 
-	virtual Error init();
-	virtual void start();
-	virtual int get_mix_rate() const;
-	virtual SpeakerMode get_speaker_mode() const;
-	virtual void lock();
-	virtual void unlock();
-	virtual void finish();
+bool ResourceSaverWebP::recognize(const Ref<Resource> &p_resource) const {
+	return (p_resource.is_valid() && p_resource->is_class("ImageTexture"));
+}
 
-	void set_use_threads(bool p_use_threads);
-	void set_speaker_mode(SpeakerMode p_mode);
-	void set_mix_rate(int p_rate);
+void ResourceSaverWebP::get_recognized_extensions(const Ref<Resource> &p_resource, List<String> *p_extensions) const {
+	if (Object::cast_to<ImageTexture>(*p_resource)) {
+		p_extensions->push_back("webp");
+	}
+}
 
-	uint32_t get_channels() const;
-
-	void mix_audio(int p_frames, int32_t *p_buffer);
-
-	static AudioDriverDummy *get_dummy_singleton() { return singleton; }
-
-	AudioDriverDummy();
-	~AudioDriverDummy() {}
-};
-
-#endif
+ResourceSaverWebP::ResourceSaverWebP() {
+	Image::save_webp_func = &save_image;
+	Image::save_webp_buffer_func = &save_image_to_buffer;
+}

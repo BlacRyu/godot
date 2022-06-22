@@ -1,5 +1,5 @@
 /*************************************************************************/
-/*  audio_driver_dummy.h                                                 */
+/*  webp_common.h                                                        */
 /*************************************************************************/
 /*                       This file is part of:                           */
 /*                           GODOT ENGINE                                */
@@ -28,61 +28,18 @@
 /* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                */
 /*************************************************************************/
 
-#ifndef AUDIO_DRIVER_DUMMY_H
-#define AUDIO_DRIVER_DUMMY_H
+#ifndef WEBP_COMMON_H
+#define WEBP_COMMON_H
 
-#include "servers/audio_server.h"
+#include "core/io/image.h"
 
-#include "core/os/mutex.h"
-#include "core/os/thread.h"
+namespace WebPCommon {
+// Given an image, pack this data into a WebP file.
+Vector<uint8_t> _webp_lossy_pack(const Ref<Image> &p_image, float p_quality);
+Vector<uint8_t> _webp_lossless_pack(const Ref<Image> &p_image);
+// Given a WebP file, unpack it into an image.
+Ref<Image> _webp_unpack(const Vector<uint8_t> &p_buffer);
+Error webp_load_image_from_buffer(Image *p_image, const uint8_t *p_buffer, int p_buffer_len);
+} //namespace WebPCommon
 
-class AudioDriverDummy : public AudioDriver {
-	Thread thread;
-	Mutex mutex;
-
-	int32_t *samples_in = nullptr;
-
-	static void thread_func(void *p_udata);
-
-	uint32_t buffer_frames = 4096;
-	int32_t mix_rate = -1;
-	SpeakerMode speaker_mode = SPEAKER_MODE_STEREO;
-
-	int channels;
-
-	bool active;
-	bool thread_exited;
-	mutable bool exit_thread;
-
-	bool use_threads = true;
-
-	static AudioDriverDummy *singleton;
-
-public:
-	const char *get_name() const {
-		return "Dummy";
-	};
-
-	virtual Error init();
-	virtual void start();
-	virtual int get_mix_rate() const;
-	virtual SpeakerMode get_speaker_mode() const;
-	virtual void lock();
-	virtual void unlock();
-	virtual void finish();
-
-	void set_use_threads(bool p_use_threads);
-	void set_speaker_mode(SpeakerMode p_mode);
-	void set_mix_rate(int p_rate);
-
-	uint32_t get_channels() const;
-
-	void mix_audio(int p_frames, int32_t *p_buffer);
-
-	static AudioDriverDummy *get_dummy_singleton() { return singleton; }
-
-	AudioDriverDummy();
-	~AudioDriverDummy() {}
-};
-
-#endif
+#endif // WEBP_COMMON_H
