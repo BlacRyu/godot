@@ -445,6 +445,16 @@ void GDScriptLanguage::get_public_constants(List<Pair<String, Variant>> *p_const
 	p_constants->push_back(nan);
 }
 
+void GDScriptLanguage::get_public_annotations(List<MethodInfo> *p_annotations) const {
+	GDScriptParser parser;
+	List<MethodInfo> annotations;
+	parser.get_annotation_list(&annotations);
+
+	for (const MethodInfo &E : annotations) {
+		p_annotations->push_back(E);
+	}
+}
+
 String GDScriptLanguage::make_function(const String &p_class, const String &p_name, const PackedStringArray &p_args) const {
 #ifdef TOOLS_ENABLED
 	bool th = EditorSettings::get_singleton()->get_setting("text_editor/completion/add_type_hints");
@@ -950,6 +960,8 @@ static void _find_identifiers_in_class(const GDScriptParser::ClassNode *p_class,
 						}
 						option = ScriptLanguage::CodeCompletionOption(member.signal->identifier->name, ScriptLanguage::CODE_COMPLETION_KIND_SIGNAL, location);
 						break;
+					case GDScriptParser::ClassNode::Member::GROUP:
+						break; // No-op, but silences warnings.
 					case GDScriptParser::ClassNode::Member::UNDEFINED:
 						break;
 				}
@@ -1843,7 +1855,7 @@ static bool _guess_identifier_type(GDScriptParser::CompletionContext &p_context,
 
 	while (suite) {
 		for (int i = 0; i < suite->statements.size(); i++) {
-			if (suite->statements[i]->start_line > p_context.current_line) {
+			if (suite->statements[i]->end_line >= p_context.current_line) {
 				break;
 			}
 
@@ -1891,7 +1903,7 @@ static bool _guess_identifier_type(GDScriptParser::CompletionContext &p_context,
 		suite = suite->parent_block;
 	}
 
-	if (last_assigned_expression && last_assign_line != p_context.current_line) {
+	if (last_assigned_expression && last_assign_line < p_context.current_line) {
 		GDScriptParser::CompletionContext c = p_context;
 		c.current_line = last_assign_line;
 		r_type.assigned_expression = last_assigned_expression;
@@ -2028,7 +2040,10 @@ static bool _guess_identifier_type_from_base(GDScriptParser::CompletionContext &
 							return true;
 						case GDScriptParser::ClassNode::Member::VARIABLE:
 							if (!is_static) {
-								if (member.variable->initializer) {
+								if (member.variable->get_datatype().is_set() && !member.variable->get_datatype().is_variant()) {
+									r_type.type = member.variable->get_datatype();
+									return true;
+								} else if (member.variable->initializer) {
 									const GDScriptParser::ExpressionNode *init = member.variable->initializer;
 									if (init->is_constant) {
 										r_type.value = init->reduced_value;
@@ -2050,9 +2065,6 @@ static bool _guess_identifier_type_from_base(GDScriptParser::CompletionContext &
 										r_type.type = init->get_datatype();
 										return true;
 									}
-								} else if (member.variable->get_datatype().is_set() && !member.variable->get_datatype().is_variant()) {
-									r_type.type = member.variable->get_datatype();
-									return true;
 								}
 							}
 							// TODO: Check assignments in constructor.
@@ -2082,6 +2094,8 @@ static bool _guess_identifier_type_from_base(GDScriptParser::CompletionContext &
 							r_type.type.kind = GDScriptParser::DataType::CLASS;
 							r_type.type.class_type = member.m_class;
 							return true;
+						case GDScriptParser::ClassNode::Member::GROUP:
+							return false; // No-op, but silences warnings.
 						case GDScriptParser::ClassNode::Member::UNDEFINED:
 							return false; // Unreachable.
 					}
@@ -3373,6 +3387,15 @@ static Error _lookup_symbol_from_base(const GDScriptParser::DataType &p_base, co
 			GDScriptParser::DataType base_type = context.current_class->get_datatype();
 
 			if (_lookup_symbol_from_base(base_type, p_symbol, false, r_result) == OK) {
+				return OK;
+			}
+		} break;
+		case GDScriptParser::COMPLETION_ANNOTATION: {
+			const String annotation_symbol = "@" + p_symbol;
+			if (parser.annotation_exists(annotation_symbol)) {
+				r_result.type = ScriptLanguage::LOOKUP_RESULT_CLASS_ANNOTATION;
+				r_result.class_name = "@GDScript";
+				r_result.class_member = annotation_symbol;
 				return OK;
 			}
 		} break;
