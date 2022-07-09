@@ -4043,10 +4043,8 @@ Ref<ImageTexture> EditorNode::_load_custom_class_icon(const String &p_path) cons
 		Ref<Image> img = memnew(Image);
 		Error err = ImageLoader::load_image(p_path, img);
 		if (err == OK) {
-			Ref<ImageTexture> icon = memnew(ImageTexture);
 			img->resize(16 * EDSCALE, 16 * EDSCALE, Image::INTERPOLATE_LANCZOS);
-			icon->create_from_image(img);
-			return icon;
+			return ImageTexture::create_from_image(img);
 		}
 	}
 	return nullptr;
@@ -5393,9 +5391,7 @@ Variant EditorNode::drag_resource(const Ref<Resource> &p_res, Control *p_from) {
 		Ref<Image> img = texture->get_image();
 		img = img->duplicate();
 		img->resize(48, 48); // meh
-		Ref<ImageTexture> resized_pic = Ref<ImageTexture>(memnew(ImageTexture));
-		resized_pic->create_from_image(img);
-		preview = resized_pic;
+		preview = ImageTexture::create_from_image(img);
 	}
 
 	drag_preview->set_texture(preview);
@@ -7056,12 +7052,10 @@ EditorNode::EditorNode() {
 	ScriptTextEditor::register_editor(); // Register one for text scripts.
 	TextEditor::register_editor();
 
-	// Asset Library can't work on Web editor for now as most assets are sourced
-	// directly from GitHub which does not set CORS.
 	if (AssetLibraryEditorPlugin::is_available()) {
 		add_editor_plugin(memnew(AssetLibraryEditorPlugin));
 	} else {
-		WARN_PRINT("Asset Library not available, as it requires SSL to work.");
+		print_verbose("Asset Library not available (due to using Web editor, or SSL support disabled).");
 	}
 
 	// Add interface before adding plugins.
